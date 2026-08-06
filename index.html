@@ -4949,12 +4949,15 @@ async function renderSum(r){
       var startD=new Date(ld);
       var endD=item.borrow.ReturnDate?new Date(item.borrow.ReturnDate):now;
       var days=Math.max(1,Math.round((endD-startD)/86400000));
-      if(!eqDaysLocal[eqNo])eqDaysLocal[eqNo]={days:0,equipName:S(item.eq.name),loanCount:0,active:item.status==='ACTIVE'||item.status==='ACC_PENDING'};
-      eqDaysLocal[eqNo].days+=days;eqDaysLocal[eqNo].loanCount+=1;
-      if(item.status==='ACTIVE'||item.status==='ACC_PENDING')eqDaysLocal[eqNo].active=true;
-      if(!eqDaysLocal[eqNo].equipName&&S(item.eq.name))eqDaysLocal[eqNo].equipName=S(item.eq.name);
+      var eqName=S(item.eq.name);
+      // key รวม eqNo+eqName เพื่อแยกเครื่องต่างชนิดที่บังเอิญเลขซ้ำกัน
+      var _k=eqNo+'‖'+eqName;
+      if(!eqDaysLocal[_k])eqDaysLocal[_k]={days:0,equipName:eqName,eqNoReal:eqNo,loanCount:0,active:item.status==='ACTIVE'||item.status==='ACC_PENDING'};
+      eqDaysLocal[_k].days+=days;eqDaysLocal[_k].loanCount+=1;
+      if(item.status==='ACTIVE'||item.status==='ACC_PENDING')eqDaysLocal[_k].active=true;
     });
-    var allEqDays=Object.entries(eqDaysLocal).sort(function(a,b){return b[1].days-a[1].days;});
+    // แปลงกลับเป็น [eqNoReal, value] เพื่อให้ downstream (filterEqDays/กราฟ/ตาราง) ทำงานเหมือนเดิมทุกจุด
+    var allEqDays=Object.values(eqDaysLocal).sort(function(a,b){return b.days-a.days;}).map(function(v){return[v.eqNoReal,v];});
     var totalEq=allEqDays.length;
 
     // เก็บไว้บน window ให้ filterEqDays เข้าถึงได้
